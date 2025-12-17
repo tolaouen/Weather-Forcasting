@@ -4,7 +4,7 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationE
 from flask_wtf import FlaskForm
 
 from app.models.users import User
-from app.database import get_db
+from database import get_db
 from sqlalchemy.orm import Session
 
 # Check for strong password validation
@@ -136,7 +136,7 @@ class EditUserForm(FlaskForm):
                  
 # Delete User Form validation 
  
-class DeleteUserForm(FlaskForm):
+class ConfirmDeleteUserForm(FlaskForm):
     submit = SubmitField("Delete ")
 
 
