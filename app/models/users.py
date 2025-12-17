@@ -1,23 +1,23 @@
-from sqlalchemy import Column, Integer, String, DateTime, ReleaseSavepointClause, Boolean
+
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.database import Base
+from extensions import db
 from datetime import datetime
 
 
 # User Table Models
 
-class User(Base):
+class User(db.Model):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True, nullable=False)
-    username = Column(String(120), unique=True, index=True, nullable=False)
-    email = Column(String(120), unique=True, index=True, nullable=False)
-    full_name = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True, nullable=False)  
-    hashed_password = Column(String(120), nullable=False)
+    id = db.Column(db.Integer, primary_key=True, index=True, nullable=False)
+    username = db.Column(db.String(120), unique=True, index=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, index=True, nullable=False)
+    full_name = db.Column(db.String, nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)  
+    hashed_password = db.Column(db.String(120), nullable=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
     def set_password(self, password: str) -> str:

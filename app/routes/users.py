@@ -1,22 +1,21 @@
 from flask import Blueprint, url_for, redirect, render_template, flash, abort
 from app.services.users import UserService
-from app.forms.form_users import CreateUserForm, UpdateUserForm, ConfirmDeleteUserForm
-from sqlalchemy.orm import Session
-from app.database import get_db
+from app.forms.form_users import EditUserForm, ConfirmDeleteUserForm, CreateUserForm
+
 
 
 users_router = Blueprint("users", __name__, url_prefix="/users")
 
 #  Get all users route
 @users_router.route("/", methods=["GET"])
-def index(db: Session = get_db()):
-    users = UserService.get_all(db)
+def index():
+    users = UserService.get_all()
     return render_template("users/index.html", users=users)
 
 # Get User by ID route
 @users_router.route("/<int:user_id>", methods=["GET"])
-def detail(user_id: int, db: Session = get_db()):
-    user = UserService.get_by_id(user_id, db)
+def detail(user_id: int):
+    user = UserService.get_by_id(user_id)
 
     if not user:
         abort(404, description="User not found")
@@ -25,7 +24,7 @@ def detail(user_id: int, db: Session = get_db()):
 
 # Create User route
 @users_router.route("/create", methods=["GET", "POST"])
-def create(db: Session = get_db()):
+def create():
     form = CreateUserForm()
 
     if form.validate_on_submit():
@@ -36,7 +35,7 @@ def create(db: Session = get_db()):
             "is_active": form.is_active.data,
         }
         password = form.password.data   
-        user = UserService.create(data, password, db)
+        user = UserService.create(data, password)
         flash(f"User {user.username} created successfully!.", "success")
         return redirect(url_for("users.detail", user_id=user.id))
     return render_template("users/create.html", form=form)
@@ -44,13 +43,13 @@ def create(db: Session = get_db()):
 
 # Update Users Route
 @users_router.route("/<int:user_id>/edit", methods=["GET", "POST"])
-def edit(user_id: int, db: Session = get_db()):
+def edit(user_id: int):
 
-    user = UserService.get_by_id(user_id, db)
+    user = UserService.get_by_id(user_id)
     if not user:
         abort(404, description="User not found")
 
-    form = UpdateUserForm(original_user=user, obj=user)
+    form = EditUserForm(original_user=user, obj=user)
 
     if form.validate_on_submit():
         data = {
@@ -60,15 +59,15 @@ def edit(user_id: int, db: Session = get_db()):
             "is_active": form.is_active.data,
         }
         password = form.password.data or None
-        UserService.update(user, data, password, db)
-        flash(f"User {user.username} was updated succesfully!.", "success")
+        UserService.update(user, data, password)
+        flash(f"User {user.username} was updated successfully!.", "success")
         return redirect(url_for("users.edit", user_id=user.id))
     return render_template("users/edit.html", form=form, user=user)
 
 # Delete user confirm Route
 @users_router.route("/<int:user_id>/delete", methods=["GET"])
-def detete_confirm(user_id: int, db: Session = get_db()):
-    user = UserService.get_by_id(user_id, db)
+def delete_confirm(user_id: int):
+    user = UserService.get_by_id(user_id)
     if not user:
         abort(404, "User Not Found")
 
@@ -76,13 +75,13 @@ def detete_confirm(user_id: int, db: Session = get_db()):
     return render_template("users/delete_confirm.html", user=user, form=form)       
 
 # Delete user route
-@users_router("/<int:user_id>/delete", methods=["POST"])
-def delete(user_id: int, db: Session = get_db()):
-    user = UserService.get_by_id(user_id, db)
+@users_router.route("/<int:user_id>/delete", methods=["POST"])
+def delete(user_id: int):
+    user = UserService.get_by_id(user_id)
 
     if not user:
         abort(404, "User not Found")
 
     UserService.delete(user)
-    flash("User was delete succesfully!.", "success")
+    flash("User was deleted successfully!.", "success")
     return redirect(url_for("users.index"))

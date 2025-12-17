@@ -1,11 +1,10 @@
 import re
 from wtforms import BooleanField, StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
+from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, Optional
 from flask_wtf import FlaskForm
 
 from app.models.users import User
-from database import get_db
-from sqlalchemy.orm import Session
+from extensions import db
 
 # Check for strong password validation
 
@@ -55,7 +54,7 @@ class CreateUserForm(FlaskForm):
 
     is_active = BooleanField("Is Active", default=True)
 
-    passwod = PasswordField(
+    password = PasswordField(
         "Password",
         validators=[DataRequired(), strong_password],
         render_kw={"placeholder": "Enter your password"},
@@ -70,14 +69,12 @@ class CreateUserForm(FlaskForm):
     submit = SubmitField("Save")
 
     def validate_username(self, username):
-        db: Session = get_db()
-        user = db.query(User).filter(User.username == username.data).first()
+        user = db.session.query(User).filter(User.username == username.data).first()
         if user:
             raise ValidationError("Username is already taken. Please choose a different one.")
         
     def validate_email(self, email):
-        db: Session = get_db()
-        user = db.query(User).filter(User.email == email.data).first()
+        user = db.session.query(User).filter(User.email == email.data).first()
         if user:
             raise ValidationError("Email is already registered. Please choose a different one.")
         
@@ -104,13 +101,13 @@ class EditUserForm(FlaskForm):
 
     password = PasswordField(
         "Password",
-        validators=[strong_password],
+        validators=[Optional(), strong_password],
         render_kw={"placeholder": "Enter new strong password"},
     )
 
     confirm_password = PasswordField(
         "Confirm Password",
-        validators=[EqualTo("password", message="Passwords must match.")],
+        validators=[Optional(), EqualTo("password", message="Passwords must match.")],
         render_kw={"placeholder": "Confirm your new password"},
     )
 
@@ -122,17 +119,28 @@ class EditUserForm(FlaskForm):
 
     def validate_username(self, username):
         if username.data != self.original_user.username:
-            db: Session = get_db()
-            user = db.query(User).filter(User.username == username.data).first()
+            user = db.session.query(User).filter(User.username == username.data).first()
             if user:
                 raise ValidationError("Username is already taken. Please choose a different one.")
 
     def validate_email(self, email):
         if email.data != self.original_user.email:
-            db: Session = get_db()
-            user = db.query(User).filter(User.email == email.data).first()
+            user = db.session.query(User).filter(User.email == email.data).first()
             if user:
-                raise ValidationError("Email is already registered. Please choose a different one.")   
+                raise ValidationError("Email is already registered. Please choose a different one.")
+    
+    def validate_password(self, password):
+        # If password is provided, it must be strong (handled by strong_password validator)
+        # If password is empty, that's fine (handled by Optional())
+        pass
+    
+    def validate_confirm_password(self, confirm_password):
+        # If password is provided, confirm_password must match
+        if self.password.data and not confirm_password.data:
+            raise ValidationError("Please confirm your password.")
+        # If confirm_password is provided but password is not, that's an error
+        if confirm_password.data and not self.password.data:
+            raise ValidationError("Please enter a password.")
                  
 # Delete User Form validation 
  

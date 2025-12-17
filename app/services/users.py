@@ -1,57 +1,46 @@
-from typing import Optional
-from sqlalchemy.orm import Session
+from typing import Optional, Dict, Any
 from app.models.users import User
-from app.schemas.users import UserCreate, UserUpdate
-from app.database import get_db
+from extensions import db
 
 class UserService:
 
     @staticmethod
-    def get_all(db: Session = get_db()) -> list[User]:
-        return db.query(User).all()
+    def get_all() -> list[User]:
+        return db.session.query(User).all()
     
     @staticmethod
-    def get_by_id(user_id: int, db: Session = get_db()) -> Optional[User]:
-        return db.query(User).filter(User.id == user_id).first()
+    def get_by_id(user_id: int) -> Optional[User]:
+        return db.session.query(User).filter(User.id == user_id).first()
     
     @staticmethod
-    def create(data: UserCreate, db: Session = get_db()) -> User:
+    def create(data: Dict[str, Any], password: str) -> User:
         new_user = User(
-            username=data.username,
-            email=data.email,
-            full_name=data.full_name,
+            username=data.get('username'),
+            email=data.get('email'),
+            full_name=data.get('full_name'),
             is_active=data.get('is_active', True)
         )
-        new_user.set_password(data.password)
+        new_user.set_password(password)
 
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+        db.session.add(new_user)
+        db.session.commit()
+        db.session.refresh(new_user)
         return new_user
     
     @staticmethod
-    def update(user_id: int, data: UserUpdate, db: Session = get_db()) -> Optional[User]:
-        user_update = db.query(User).filter(User.id == user_id).first()
-
-        if not user_update:
-            return None
+    def update(user: User, data: Dict[str, Any], password: Optional[str] = None) -> User:
+        for key, value in data.items():
+            setattr(user, key, value)
         
-        for key, value in data.dict(exclude_unset=True).items():
-            if key == "password":
-                user_update.set_password(value)
-            else:
-                setattr(user_update, key, value)
-        db.commit()
-        db.refresh(user_update)
-        return user_update
+        if password:
+            user.set_password(password)
+        
+        db.session.commit()
+        db.session.refresh(user)
+        return user
 
     @staticmethod
-    def delete(user_id: int, db: Session = get_db()) -> bool:
-        user_delete = db.query(User).filter(User.id == user_id).first()
-
-        if not user_delete:
-            return False
-        
-        db.delete(user_delete)
-        db.commit()
+    def delete(user: User) -> bool:
+        db.session.delete(user)
+        db.session.commit()
         return True
