@@ -1,1 +1,3 @@
-from .users import users_router
+from .users import user_bp
+
+__all__ = ['user_bp']

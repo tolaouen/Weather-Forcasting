@@ -1,27 +1,24 @@
-import os
 from flask import Flask, redirect, url_for
 from config import Config
-from extensions import db, migrate
-from app.routes.users import users_router
+from extensions import db, csrf
 
 def create_app(config_class: type[Config] = Config):
-    # Get absolute path to the app package directory
-    app_dir = os.path.abspath(os.path.dirname(__file__))
-    template_dir = os.path.join(app_dir, 'templates')
-    static_dir = os.path.join(app_dir, 'static')
-    
-    # Initialize Flask with absolute paths to ensure templates are found
-    app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+
+    app = Flask(__name__, template_folder='templates', static_folder='static')
     app.config.from_object(config_class)
 
     db.init_app(app)
-    migrate.init_app(app, db)
+    csrf.init_app(app)
 
-
-    app.register_blueprint(users_router)
+    from app.routes.users import user_bp
+    app.register_blueprint(user_bp)
 
     @app.route("/")
     def home():
         return redirect(url_for("users.index"))
+    
+    with app.app_context():
+        from app.models import User
+        db.create_all()
     
     return app
